@@ -6,7 +6,7 @@ import WelcomeScreen from '../screens/Onboarding/WelcomeScreen';
 import DisclaimerScreen from '../screens/Onboarding/DisclaimerScreen';
 import CreateDogProfileScreen from '../screens/Onboarding/CreateDogProfileScreen';
 import EmailSignupScreen from '../screens/Onboarding/EmailSignupScreen';
-import HomeScreen from '../screens/HomeScreen';
+import TabNavigator from './TabNavigator';
 import LogPooScreen from '../screens/LogPooScreen';
 import PooDetailScreen from '../screens/PooDetailScreen';
 import RetakePromptScreen from '../screens/RetakePromptScreen';
@@ -58,8 +58,8 @@ const AppNavigator = () => {
         {profile ? (
           <>
             <Stack.Screen 
-              name="Home" 
-              component={HomeScreen} 
+              name="MainTabs" 
+              component={TabNavigator} 
               options={{ headerShown: false }}
             />
             <Stack.Screen 
@@ -70,12 +70,12 @@ const AppNavigator = () => {
             <Stack.Screen 
               name="PooDetail" 
               component={PooDetailScreen} 
-              options={{ title: 'Poo Details', headerShown: false }} // Custom header in PooDetail
+              options={{ title: 'Poo Details' }} // Header shown for back button
             />
             <Stack.Screen 
               name="Settings" 
               component={SettingsScreen} 
-              options={{ title: 'Settings', headerShown: false }} // Custom header in Settings
+              options={{ title: 'Settings', headerShown: false }} 
             />
             <Stack.Screen 
               name="RetakePrompt" 

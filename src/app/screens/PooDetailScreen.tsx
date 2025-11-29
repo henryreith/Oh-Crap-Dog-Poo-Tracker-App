@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 const PooDetailScreen = ({ route, navigation }) => {
   const [log, setLog] = useState<PooLog | null>(null);
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isManualDetailsExpanded, setIsManualDetailsExpanded] = useState(false);
   const { logId } = route.params;
 
   useEffect(() => {
@@ -28,6 +28,11 @@ const PooDetailScreen = ({ route, navigation }) => {
       console.log('Fetched Analysis for Log:', logId, JSON.stringify(analysisResult, null, 2));
       if (analysisResult) {
         setAnalysis(analysisResult);
+        // If analysis exists, keep manual details collapsed by default
+        setIsManualDetailsExpanded(false);
+      } else {
+        // If no analysis, expand manual details
+        setIsManualDetailsExpanded(true);
       }
     } catch (error) {
       console.error('Error loading log details:', error);
@@ -36,6 +41,16 @@ const PooDetailScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   }, [logId]);
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={generatePdf} className="p-2">
+          <Ionicons name="share-outline" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, log, analysis]);
 
   const handleShopifyLink = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -277,15 +292,27 @@ const PooDetailScreen = ({ route, navigation }) => {
         )}
 
         <View className="mb-6">
-          <Text className="text-lg font-bold text-text_primary mb-3">Manual Details</Text>
-          <View className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm">
-            {renderAnalysisDetail('Consistency Score', `${log.consistency_score}/5`)}
-            {renderAnalysisDetail('Color', log.color.replace(/_/g, ' '))}
-            {renderAnalysisDetail('Mucus Present', log.mucus_present ? 'Yes' : 'No')}
-            {renderAnalysisDetail('Blood Visible', log.blood_visible ? 'Yes' : 'No')}
-            {renderAnalysisDetail('Worms Visible', log.worms_visible ? 'Yes' : 'No')}
-            {log.notes && renderAnalysisDetail('Notes', log.notes)}
-          </View>
+          <TouchableOpacity 
+            className="flex-row justify-between items-center mb-3"
+            onPress={() => {
+              Haptics.selectionAsync();
+              setIsManualDetailsExpanded(!isManualDetailsExpanded);
+            }}
+          >
+            <Text className="text-lg font-bold text-text_primary">Manual Details</Text>
+            <Ionicons name={isManualDetailsExpanded ? "chevron-up" : "chevron-down"} size={20} color={Colors.text_secondary} />
+          </TouchableOpacity>
+          
+          {isManualDetailsExpanded && (
+            <View className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm animate-fade-in">
+              {renderAnalysisDetail('Consistency Score', `${log.consistency_score}/5`)}
+              {renderAnalysisDetail('Color', log.color.replace(/_/g, ' '))}
+              {renderAnalysisDetail('Mucus Present', log.mucus_present ? 'Yes' : 'No')}
+              {renderAnalysisDetail('Blood Visible', log.blood_visible ? 'Yes' : 'No')}
+              {renderAnalysisDetail('Worms Visible', log.worms_visible ? 'Yes' : 'No')}
+              {log.notes && renderAnalysisDetail('Notes', log.notes)}
+            </View>
+          )}
         </View>
         
         {/* Oh Crap CTA */}
@@ -314,15 +341,7 @@ const PooDetailScreen = ({ route, navigation }) => {
           </Text>
         )}
 
-        <TouchableOpacity
-          className="bg-secondary p-4 rounded-2xl items-center justify-center mb-4 shadow-sm"
-          onPress={generatePdf}
-        >
-          <View className="flex-row items-center">
-            <Ionicons name="document-text-outline" size={24} color="white" style={{ marginRight: 8 }} />
-            <Text className="text-text_on_primary text-lg font-bold">Export for Vet (PDF)</Text>
-          </View>
-        </TouchableOpacity>
+        {/* Export button moved to header */}
 
         <TouchableOpacity
           className="bg-surface border border-error p-4 rounded-2xl items-center justify-center mb-12"

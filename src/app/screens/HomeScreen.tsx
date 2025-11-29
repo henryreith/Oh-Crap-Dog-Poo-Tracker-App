@@ -43,33 +43,15 @@ const HomeScreen = ({ navigation }) => {
     return 'Good evening';
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-  
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="px-6 pt-2 pb-6">
         <View className="flex-row justify-between items-center">
           <View>
             <Text className="text-lg text-text_secondary font-medium">{getGreeting()},</Text>
-            <Text className="text-3xl font-bold text-text_primary">{profile?.name || 'Friend'}</Text>
+            <Text className="text-3xl font-bold text-text_primary">How's {profile?.name || 'your pup'}?</Text>
           </View>
-          <TouchableOpacity 
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              navigation.navigate('Settings');
-            }}
-            className="bg-surface p-3 rounded-full shadow-sm border border-border"
-          >
-            <Ionicons name="settings-outline" size={24} color={Colors.text_primary} />
-          </TouchableOpacity>
+          {/* Settings button moved to Tab Bar */}
         </View>
       </View>
 
