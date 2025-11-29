@@ -146,7 +146,11 @@ const LogPooScreen = ({ navigation }) => {
             throw new Error("The AI analysis function failed.");
         };
         
-        const analysis = analysisData.poo_analysis;
+        const analysis = analysisData?.poo_analysis;
+
+        if (!analysis) {
+          throw new Error("Invalid AI response. Please ensure the 'analyze-poo' function is deployed.");
+        }
 
         if (analysis.confidence_score < 0.9) {
           analysisSkipped = true;
