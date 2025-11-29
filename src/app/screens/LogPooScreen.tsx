@@ -57,6 +57,14 @@ const LogPooScreen = ({ navigation }) => {
 
   const pickImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Request permission first
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: true,
