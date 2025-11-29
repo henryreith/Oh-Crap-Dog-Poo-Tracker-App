@@ -1,25 +1,25 @@
 export const Colors = {
-  primary: '#22c55e', // A vibrant green for primary actions
-  primary_light: '#dcfce7', // A light green for backgrounds/highlights
-  primary_dark: '#15803d', // A darker green for text on light backgrounds
+  primary: '#2D5E3F', // The "Oh Crap" Green
+  primary_light: '#E8F5E9', // Light green
+  primary_dark: '#1B3E28', // Darker green
   
-  secondary: '#3b82f6', // A friendly blue for secondary actions
+  secondary: '#8D6E63', // Brownish (earthy)
   
-  accent: '#f97316', // An orange for special emphasis or warnings
+  accent: '#FFB74D', // Orange/Gold
 
-  background: '#f9fafb', // A very light gray for the main app background
-  surface: '#ffffff', // White for card backgrounds, inputs, etc.
+  background: '#FFFFFF',
+  surface: '#F3F4F6', // Light gray
 
-  text_primary: '#1f2937', // Dark gray for primary text
-  text_secondary: '#4b5563', // Medium gray for secondary text
-  text_muted: '#9ca3af', // Light gray for hints and disabled text
-  text_on_primary: '#ffffff', // White text for use on dark/colored backgrounds
+  text_primary: '#1F2937',
+  text_secondary: '#4B5563',
+  text_muted: '#9CA3AF',
+  text_on_primary: '#FFFFFF',
 
-  border: '#e5e7eb', // A light gray for borders and dividers
+  border: '#E5E7EB',
   
-  error: '#ef4444', // A standard red for errors
-  success: '#22c55e', // Same as primary for success states
+  error: '#EF4444',
+  success: '#2D5E3F',
   
-  white: '#ffffff',
+  white: '#FFFFFF',
   black: '#000000',
 };

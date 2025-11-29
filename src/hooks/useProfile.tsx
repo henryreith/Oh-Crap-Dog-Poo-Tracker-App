@@ -26,63 +26,42 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const loadProfile = () => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'SELECT * FROM dog_profile LIMIT 1;',
-        [],
-        (_, { rows }) => {
-          if (rows.length > 0) {
-            setProfile(rows._array[0]);
-          }
-          setLoading(false);
-        },
-        (_, error) => {
-          console.error('Error loading profile:', error);
-          setLoading(false);
-          return false;
-        }
-      );
-    });
+    try {
+      const result = db.getFirstSync<DogProfile>('SELECT * FROM dog_profile LIMIT 1;');
+      if (result) {
+        setProfile(result);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      setLoading(false);
+    }
   };
 
   const createProfile = async (newProfile: Omit<DogProfile, 'id'>) => {
-    return new Promise<void>((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          'INSERT INTO dog_profile (name, breed, age, weight) VALUES (?, ?, ?, ?);',
-          [newProfile.name, newProfile.breed, newProfile.age, newProfile.weight],
-          (_, { insertId }) => {
-            setProfile({ id: insertId, ...newProfile });
-            resolve();
-          },
-          (_, error) => {
-            console.error('Error creating profile:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    try {
+      const result = db.runSync(
+        'INSERT INTO dog_profile (name, breed, age, weight) VALUES (?, ?, ?, ?);',
+        [newProfile.name, newProfile.breed, newProfile.age, newProfile.weight]
+      );
+      setProfile({ id: result.lastInsertRowId, ...newProfile });
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
   };
 
   const updateProfile = async (updatedProfile: DogProfile) => {
-     return new Promise<void>((resolve, reject) => {
-        db.transaction(tx => {
-            tx.executeSql(
-                'UPDATE dog_profile SET name = ?, breed = ?, age = ?, weight = ? WHERE id = ?;',
-                [updatedProfile.name, updatedProfile.breed, updatedProfile.age, updatedProfile.weight, updatedProfile.id],
-                () => {
-                    setProfile(updatedProfile);
-                    resolve();
-                },
-                (_, error) => {
-                    console.error('Error updating profile:', error);
-                    reject(error);
-                    return false;
-                }
-            );
-        });
-    });
+    try {
+      db.runSync(
+        'UPDATE dog_profile SET name = ?, breed = ?, age = ?, weight = ? WHERE id = ?;',
+        [updatedProfile.name, updatedProfile.breed, updatedProfile.age, updatedProfile.weight, updatedProfile.id]
+      );
+      setProfile(updatedProfile);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
   };
 
   return (

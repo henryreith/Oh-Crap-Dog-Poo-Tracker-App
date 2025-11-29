@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useProfile } from '../../hooks/useProfile';
 import WelcomeScreen from '../screens/Onboarding/WelcomeScreen';
@@ -11,34 +11,80 @@ import LogPooScreen from '../screens/LogPooScreen';
 import PooDetailScreen from '../screens/PooDetailScreen';
 import RetakePromptScreen from '../screens/RetakePromptScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, useColorScheme } from 'react-native';
+import { Colors } from '../../constants/Colors';
+import { StatusBar } from 'expo-status-bar';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   const { profile, loading } = useProfile();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
+      <View className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
 
+  const MyTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: isDark ? '#0F172A' : '#F5F7FA',
+    },
+  };
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
+    <NavigationContainer theme={isDark ? DarkTheme : MyTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+          },
+          headerTintColor: Colors.primary,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            color: isDark ? '#F9FAFB' : '#111827',
+          },
+          headerBackTitleVisible: false,
+          headerShadowVisible: false, // Cleaner look for Finpal style
+        }}
+      >
         {profile ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="LogPoo" component={LogPooScreen} />
-            <Stack.Screen name="PooDetail" component={PooDetailScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="RetakePrompt" component={RetakePromptScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen 
+              name="Home" 
+              component={HomeScreen} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="LogPoo" 
+              component={LogPooScreen} 
+              options={{ title: 'Log a Poo' }}
+            />
+            <Stack.Screen 
+              name="PooDetail" 
+              component={PooDetailScreen} 
+              options={{ title: 'Poo Details', headerShown: false }} // Custom header in PooDetail
+            />
+            <Stack.Screen 
+              name="Settings" 
+              component={SettingsScreen} 
+              options={{ title: 'Settings', headerShown: false }} // Custom header in Settings
+            />
+            <Stack.Screen 
+              name="RetakePrompt" 
+              component={RetakePromptScreen} 
+              options={{ presentation: 'modal', headerShown: false }} 
+            />
           </>
         ) : (
-          <Stack.Group key="onboarding">
+          <Stack.Group key="onboarding" screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
             <Stack.Screen name="CreateDogProfile" component={CreateDogProfileScreen} />

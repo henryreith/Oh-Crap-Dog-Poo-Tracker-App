@@ -1,4 +1,5 @@
 export type DogProfile = {
+  id: number;
   name: string;
   breed?: string;
   age: number;

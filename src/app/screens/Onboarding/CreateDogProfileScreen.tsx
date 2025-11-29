@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfile } from '../../../hooks/useProfile';
 import { DogProfile } from '../../../types';
+import { Colors } from '../../../constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 
-const CreateDogProfileScreen = ({ navigation }) => {
+const CreateDogProfileScreen = ({ navigation }: { navigation: any }) => {
   const [name, setName] = useState('');
   const [breed, setBreed] = useState('');
   const [age, setAge] = useState('');
@@ -28,56 +30,84 @@ const CreateDogProfileScreen = ({ navigation }) => {
       await createProfile(profileData);
       navigation.navigate('EmailSignup');
     } catch (error) {
+      console.error(error);
       Alert.alert('Error', 'Could not save profile. Please try again.');
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white p-4">
-// ...existing code...
-      <View className="mb-4">
-        <Text className="text-gray-600 mb-2">Name</Text>
-        <TextInput
-// ...existing code...
-          value={name}
-          onChangeText={setName}
-        />
-      </View>
-// ...existing code...
-      <View className="mb-4">
-        <Text className="text-gray-600 mb-2">Breed (Optional)</Text>
-        <TextInput
-// ...existing code...
-          value={breed}
-          onChangeText={setBreed}
-        />
-      </View>
-// ...existing code...
-      <View className="mb-4">
-        <Text className="text-gray-600 mb-2">Age (years)</Text>
-        <TextInput
-// ...existing code...
-          value={age}
-          onChangeText={setAge}
-          keyboardType="numeric"
-        />
-      </View>
-// ...existing code...
-      <View className="mb-4">
-        <Text className="text-gray-600 mb-2">Weight (kg)</Text>
-        <TextInput
-// ...existing code...
-          value={weight}
-          onChangeText={setWeight}
-          keyboardType="numeric"
-        />
-      </View>
-      <TouchableOpacity
-// ...existing code...
-        onPress={handleCreateProfile}
+    <SafeAreaView className="flex-1 bg-background">
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
       >
-        <Text className="text-white text-center text-lg">Create Profile</Text>
-      </TouchableOpacity>
+        <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
+          <View className="items-center mb-8">
+            <View className="bg-primary/10 p-5 rounded-full mb-4">
+              <Ionicons name="paw" size={48} color={Colors.primary} />
+            </View>
+            <Text className="text-3xl font-bold text-center mb-2 text-text_primary">Create Profile</Text>
+            <Text className="text-text_secondary text-center text-base">Tell us about your furry friend</Text>
+          </View>
+
+          <View className="bg-surface p-6 rounded-3xl border border-border shadow-sm mb-8">
+            <View className="mb-5">
+              <Text className="text-text_secondary mb-2 ml-1 font-medium">Name</Text>
+              <TextInput
+                className="border border-border rounded-2xl p-4 bg-background text-text_primary text-base"
+                placeholder="Dog's Name"
+                placeholderTextColor={Colors.text_muted}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+
+            <View className="mb-5">
+              <Text className="text-text_secondary mb-2 ml-1 font-medium">Breed (Optional)</Text>
+              <TextInput
+                className="border border-border rounded-2xl p-4 bg-background text-text_primary text-base"
+                placeholder="e.g. Golden Retriever"
+                placeholderTextColor={Colors.text_muted}
+                value={breed}
+                onChangeText={setBreed}
+              />
+            </View>
+
+            <View className="flex-row space-x-4">
+              <View className="flex-1 mb-5 mr-2">
+                <Text className="text-text_secondary mb-2 ml-1 font-medium">Age (years)</Text>
+                <TextInput
+                  className="border border-border rounded-2xl p-4 bg-background text-text_primary text-base"
+                  placeholder="e.g. 3"
+                  placeholderTextColor={Colors.text_muted}
+                  value={age}
+                  onChangeText={setAge}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View className="flex-1 mb-5 ml-2">
+                <Text className="text-text_secondary mb-2 ml-1 font-medium">Weight (kg)</Text>
+                <TextInput
+                  className="border border-border rounded-2xl p-4 bg-background text-text_primary text-base"
+                  placeholder="e.g. 25"
+                  placeholderTextColor={Colors.text_muted}
+                  value={weight}
+                  onChangeText={setWeight}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            className="bg-primary p-5 rounded-2xl shadow-lg shadow-primary/30 mb-8"
+            onPress={handleCreateProfile}
+          >
+            <Text className="text-text_on_primary text-center text-xl font-bold">Create Profile</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

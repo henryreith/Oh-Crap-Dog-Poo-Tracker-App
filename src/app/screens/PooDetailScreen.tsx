@@ -5,6 +5,8 @@ import * as Linking from 'expo-linking';
 import { db } from '../../lib/sqlite';
 import { PooLog, AIAnalysis } from '../../types';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '../../constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 
 const PooDetailScreen = ({ route, navigation }) => {
   const [log, setLog] = useState<PooLog | null>(null);
@@ -13,38 +15,24 @@ const PooDetailScreen = ({ route, navigation }) => {
   const { logId } = route.params;
 
   useEffect(() => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'SELECT * FROM poo_logs WHERE id = ?;',
-        [logId],
-        (_, { rows }) => {
-          if (rows.length > 0) {
-            setLog(rows._array[0]);
-          } else {
-            Alert.alert('Error', 'Could not find the specified log.');
-          }
-        },
-        (_, error) => {
-          console.error('Error loading log:', error);
-          Alert.alert('Error', 'An error occurred while loading the log.');
-          return false;
-        }
-      );
-      tx.executeSql(
-        'SELECT * FROM ai_analysis WHERE poo_log_id = ?;',
-        [logId],
-        (_, { rows }) => {
-          if (rows.length > 0) {
-            setAnalysis(rows._array[0]);
-          }
-        },
-        (_, error) => {
-          console.error('Error loading AI analysis:', error);
-          // Don't alert here, as analysis might not exist
-          return false;
-        }
-      );
-    }, false, () => setLoading(false));
+    try {
+      const logResult = db.getFirstSync<PooLog>('SELECT * FROM poo_logs WHERE id = ?;', [logId]);
+      if (logResult) {
+        setLog(logResult);
+      } else {
+        Alert.alert('Error', 'Could not find the specified log.');
+      }
+
+      const analysisResult = db.getFirstSync<AIAnalysis>('SELECT * FROM ai_analysis WHERE poo_log_id = ?;', [logId]);
+      if (analysisResult) {
+        setAnalysis(analysisResult);
+      }
+    } catch (error) {
+      console.error('Error loading log details:', error);
+      Alert.alert('Error', 'An error occurred while loading the log.');
+    } finally {
+      setLoading(false);
+    }
   }, [logId]);
 
   const handleShopifyLink = () => {
@@ -66,17 +54,16 @@ const PooDetailScreen = ({ route, navigation }) => {
         { 
           text: "Delete", 
           onPress: () => {
-            db.transaction(tx => {
-              tx.executeSql('DELETE FROM poo_logs WHERE id = ?;', [logId]);
-              tx.executeSql('DELETE FROM ai_analysis WHERE poo_log_id = ?;', [logId]);
-            }, (error) => {
-              console.error('Error deleting log:', error);
-              Alert.alert('Error', 'Could not delete the log.');
-            }, () => {
+            try {
+              db.runSync('DELETE FROM poo_logs WHERE id = ?;', [logId]);
+              db.runSync('DELETE FROM ai_analysis WHERE poo_log_id = ?;', [logId]);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Deleted', 'The log has been successfully deleted.');
               navigation.goBack();
-            });
+            } catch (error) {
+              console.error('Error deleting log:', error);
+              Alert.alert('Error', 'Could not delete the log.');
+            }
           },
           style: 'destructive'
         }
@@ -85,20 +72,43 @@ const PooDetailScreen = ({ route, navigation }) => {
   };
 
   const renderAnalysisDetail = (title: string, value: string | number | undefined, isJson: boolean = false) => {
-    let displayValue = value;
+    let content = <Text className="text-text_secondary mt-1 text-base">{value}</Text>;
+
     if (isJson && typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
-        displayValue = Object.entries(parsed).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join('\n');
+        if (Array.isArray(parsed)) {
+           content = (
+             <View className="mt-1">
+               {parsed.map((item, index) => (
+                 <View key={index} className="flex-row items-start mb-1">
+                   <Text className="text-primary mr-2">•</Text>
+                   <Text className="text-text_secondary flex-1">{item}</Text>
+                 </View>
+               ))}
+             </View>
+           );
+        } else if (typeof parsed === 'object' && parsed !== null) {
+          content = (
+            <View className="mt-1">
+              {Object.entries(parsed).map(([k, v]) => (
+                <View key={k} className="flex-row mb-1">
+                  <Text className="text-text_primary font-semibold mr-2 capitalize">{k.replace(/_/g, ' ')}:</Text>
+                  <Text className="text-text_secondary flex-1">{String(v)}</Text>
+                </View>
+              ))}
+            </View>
+          );
+        }
       } catch (e) {
         // Not a valid JSON string, display as is
       }
     }
 
     return (
-      <View className="p-4 border-b border-border">
-        <Text className="text-lg font-bold text-text_primary capitalize">{title.replace(/_/g, ' ')}</Text>
-        <Text className="text-text_secondary mt-1">{displayValue}</Text>
+      <View className="p-4 border-b border-border last:border-b-0">
+        <Text className="text-base font-bold text-text_primary capitalize mb-1">{title.replace(/_/g, ' ')}</Text>
+        {content}
       </View>
     );
   };
@@ -116,7 +126,7 @@ const PooDetailScreen = ({ route, navigation }) => {
       <SafeAreaView className="flex-1 bg-background justify-center items-center p-4">
         <Text className="text-xl text-text_muted text-center">Log not found</Text>
         <Text className="text-text_muted text-center mt-2">This log may have been deleted.</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4 bg-primary p-3 rounded-lg">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4 bg-primary p-3 rounded-2xl">
           <Text className="text-text_on_primary font-bold">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -125,30 +135,51 @@ const PooDetailScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {log.photo_uri && (
-          <Image source={{ uri: log.photo_uri }} className="w-full h-64" resizeMode="cover" />
-        )}
-        <View className="p-4">
-          <Text className="text-2xl font-bold text-text_primary">Log from {new Date(log.created_at).toLocaleString()}</Text>
-        </View>
+      <View className="px-4 py-2 flex-row items-center">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="bg-surface p-2 rounded-full border border-border mr-4">
+          <Ionicons name="arrow-back" size={24} color={Colors.text_primary} />
+        </TouchableOpacity>
+        <Text className="text-xl font-bold text-text_primary">Log Details</Text>
+      </View>
 
-        <View className="p-4 bg-surface border-y border-border">
-          <Text className="text-xl font-bold text-text_primary mb-2">Manual Log Details</Text>
-          {renderAnalysisDetail('Consistency Score', log.consistency_score)}
-          {renderAnalysisDetail('Color', log.color.replace(/_/g, ' '))}
-          {renderAnalysisDetail('Mucus Present', log.mucus_present ? 'Yes' : 'No')}
-          {renderAnalysisDetail('Blood Visible', log.blood_visible ? 'Yes' : 'No')}
-          {renderAnalysisDetail('Worms Visible', log.worms_visible ? 'Yes' : 'No')}
-          {log.notes && renderAnalysisDetail('Notes', log.notes)}
+      <ScrollView showsVerticalScrollIndicator={false} className="px-4 pt-4">
+        {log.photo_uri && (
+          <View className="shadow-lg shadow-black/20 rounded-3xl mb-6">
+            <Image source={{ uri: log.photo_uri }} className="w-full h-72 rounded-3xl" resizeMode="cover" />
+            <View className="absolute bottom-4 right-4 bg-black/60 px-3 py-1 rounded-full">
+              <Text className="text-white text-xs font-bold">{new Date(log.created_at).toLocaleDateString()}</Text>
+            </View>
+          </View>
+        )}
+
+        <View className="mb-6">
+          <Text className="text-lg font-bold text-text_primary mb-3">Manual Details</Text>
+          <View className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm">
+            {renderAnalysisDetail('Consistency Score', `${log.consistency_score}/5`)}
+            {renderAnalysisDetail('Color', log.color.replace(/_/g, ' '))}
+            {renderAnalysisDetail('Mucus Present', log.mucus_present ? 'Yes' : 'No')}
+            {renderAnalysisDetail('Blood Visible', log.blood_visible ? 'Yes' : 'No')}
+            {renderAnalysisDetail('Worms Visible', log.worms_visible ? 'Yes' : 'No')}
+            {log.notes && renderAnalysisDetail('Notes', log.notes)}
+          </View>
         </View>
 
         {analysis ? (
-          <View className="p-4">
-            <Text className="text-xl font-bold text-text_primary mb-2">AI Analysis</Text>
-            <View className="bg-surface rounded-lg border border-border overflow-hidden">
+          <View className="mb-6">
+            <View className="flex-row items-center mb-3">
+              <Ionicons name="sparkles" size={20} color={Colors.primary} style={{ marginRight: 8 }} />
+              <Text className="text-lg font-bold text-text_primary">AI Analysis</Text>
+            </View>
+            
+            <View className="bg-surface rounded-3xl border border-border overflow-hidden shadow-sm">
+              <View className="p-4 bg-primary/10 border-b border-border flex-row justify-between items-center">
+                <Text className="font-bold text-primary text-lg">Health Score</Text>
+                <View className="bg-primary px-3 py-1 rounded-full">
+                  <Text className="text-white font-bold">{analysis.health_score}/100</Text>
+                </View>
+              </View>
+              
               {renderAnalysisDetail('Classification', analysis.classification)}
-              {renderAnalysisDetail('Health Score', `${analysis.health_score}/100`)}
               {renderAnalysisDetail('Gut Health Summary', analysis.gut_health_summary)}
               {renderAnalysisDetail('Shape Analysis', analysis.shape_analysis, true)}
               {renderAnalysisDetail('Texture Analysis', analysis.texture_analysis, true)}
@@ -157,45 +188,54 @@ const PooDetailScreen = ({ route, navigation }) => {
               {renderAnalysisDetail('Parasite Check', analysis.parasite_check_results, true)}
               {renderAnalysisDetail('Flags & Observations', analysis.flags_and_observations, true)}
               {renderAnalysisDetail('Actionable Recommendations', analysis.actionable_recommendations, true)}
-              {renderAnalysisDetail('Vet Flag', analysis.vet_flag ? 'Yes, consult a vet' : 'No immediate concern')}
-              {renderAnalysisDetail('Confidence Score', `${Math.round(analysis.confidence_score * 100)}%`)}
+              
+              <View className={`p-4 border-t border-border ${analysis.vet_flag ? 'bg-error/10' : 'bg-success/10'}`}>
+                <Text className="font-bold mb-1 text-text_primary">Vet Recommendation</Text>
+                <Text className={analysis.vet_flag ? 'text-error font-bold' : 'text-success font-bold'}>
+                  {analysis.vet_flag ? '⚠️ Consult a vet' : '✅ No immediate concern'}
+                </Text>
+              </View>
             </View>
           </View>
         ) : (
-          <View className="p-4 items-center my-4">
-            <Text className="text-text_muted">No AI Analysis available for this log.</Text>
+          <View className="p-6 bg-surface rounded-3xl border border-border items-center mb-6">
+            <Ionicons name="analytics-outline" size={48} color={Colors.text_muted} />
+            <Text className="text-text_muted mt-2 text-center">No AI Analysis available for this log.</Text>
           </View>
         )}
         
         {/* Oh Crap CTA */}
         {analysis && (
-          <View className="my-4 mx-4 p-4 bg-primary_light rounded-lg items-center border border-primary">
-              <Text className="text-xl font-bold text-primary_dark text-center">Analysis Complete!</Text>
-              <Text className="text-center text-primary_dark my-2">Keep your walks clean and sustainable with Oh Crap bags.</Text>
+          <View className="mb-6 p-6 bg-primary_light rounded-3xl items-center border border-primary shadow-sm">
+              <Image 
+                source={require('../../../assets/images/icon.png')} 
+                className="w-16 h-16 rounded-2xl mb-4"
+                style={{ tintColor: Colors.primary }} // Optional tint if icon is monochrome
+              />
+              <Text className="text-xl font-bold text-primary_dark text-center mb-2">Analysis Complete!</Text>
+              <Text className="text-center text-primary_dark mb-4">Keep your walks clean and sustainable with Oh Crap bags.</Text>
               <TouchableOpacity 
-                  className="bg-primary p-4 rounded-lg mt-2 w-full shadow"
+                  className="bg-primary p-4 rounded-2xl w-full shadow-lg shadow-primary/30"
                   onPress={handleShopifyLink}
               >
                   <Text className="text-text_on_primary text-center font-bold text-lg">Shop Now - 10% Off</Text>
-                  <Text className="text-green-200 text-center font-semibold">Use code: HEALTHYPUP10</Text>
+                  <Text className="text-green-100 text-center font-semibold text-sm mt-1">Use code: HEALTHYPUP10</Text>
               </TouchableOpacity>
           </View>
         )}
 
         {analysis && (
-          <Text className="text-xs text-text_muted text-center p-4">
+          <Text className="text-xs text-text_muted text-center px-4 mb-8">
             Disclaimer: The AI analysis is for informational purposes only and is not a substitute for professional veterinary advice. Always consult your vet for health concerns.
           </Text>
         )}
 
-        <View className="p-4">
-          <TouchableOpacity
-            className="bg-error p-3 rounded-lg items-center justify-center my-4"
-            onPress={deleteLog}
-          >
-            <Text className="text-text_on_primary text-lg font-bold">Delete Log</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          className="bg-surface border border-error p-4 rounded-2xl items-center justify-center mb-12"
+          onPress={deleteLog}
+        >
+          <Text className="text-error text-lg font-bold">Delete Log</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

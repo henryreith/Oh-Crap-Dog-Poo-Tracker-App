@@ -50,7 +50,7 @@ const EmailSignupScreen = ({ navigation }) => {
         />
       </View>
       <TouchableOpacity
-        className={`p-4 rounded-lg ${loading ? 'bg-gray-400' : 'bg-green-500'}`}
+        className={`p-4 rounded-lg ${loading ? 'bg-gray-400' : 'bg-primary'}`}
         onPress={handleSignup}
         disabled={loading}
       >

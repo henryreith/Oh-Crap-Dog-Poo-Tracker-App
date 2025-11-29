@@ -12,6 +12,7 @@ import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../../constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 
 const consistencyLabels = {
   1: 'Very Loose',
@@ -30,6 +31,18 @@ const colorOptions = [
   { label: 'Red Streaks', value: 'red_streaks' },
 ];
 
+const getColorHex = (colorValue: string) => {
+  switch (colorValue) {
+    case 'normal_brown': return '#8D6E63';
+    case 'greenish': return '#558B2F';
+    case 'yellow_orange': return '#FFB74D';
+    case 'greasy_gray': return '#9E9E9E';
+    case 'black_tarry': return '#212121';
+    case 'red_streaks': return '#D32F2F';
+    default: return '#8D6E63';
+  }
+};
+
 const LogPooScreen = ({ navigation }) => {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [consistency, setConsistency] = useState(4);
@@ -40,6 +53,7 @@ const LogPooScreen = ({ navigation }) => {
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Saving Log...');
+  const [showManualEntry, setShowManualEntry] = useState(false);
 
   const pickImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -137,18 +151,15 @@ const LogPooScreen = ({ navigation }) => {
 
         // Save analysis to SQLite
         setLoadingMessage('Saving analysis...');
-        db.transaction(tx => {
-          tx.executeSql(
+        try {
+          db.runSync(
             'INSERT INTO ai_analysis (id, poo_log_id, classification, health_score, gut_health_summary, shape_analysis, texture_analysis, color_analysis, moisture_analysis, parasite_check_results, flags_and_observations, actionable_recommendations, vet_flag, confidence_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [uuidv4(), logId, analysis.classification, analysis.health_score, analysis.gut_health_summary, JSON.stringify(analysis.detailed_breakdown.shape), JSON.stringify(analysis.detailed_breakdown.texture), JSON.stringify(analysis.detailed_breakdown.colour), JSON.stringify(analysis.detailed_breakdown.moisture_and_hydration), JSON.stringify(analysis.detailed_breakdown.parasite_check), JSON.stringify(analysis.flags_and_observations), JSON.stringify(analysis.actionable_recommendations), analysis.vet_flag, analysis.confidence_score],
-            () => {},
-            (_, error) => {
-              console.error("Error saving AI analysis:", error);
-              // This error is logged, but we still proceed to save the main log
-              return false;
-            }
+            [uuidv4(), logId, analysis.classification, analysis.health_score, analysis.gut_health_summary, JSON.stringify(analysis.detailed_breakdown.shape), JSON.stringify(analysis.detailed_breakdown.texture), JSON.stringify(analysis.detailed_breakdown.colour), JSON.stringify(analysis.detailed_breakdown.moisture_and_hydration), JSON.stringify(analysis.detailed_breakdown.parasite_check), JSON.stringify(analysis.flags_and_observations), JSON.stringify(analysis.actionable_recommendations), analysis.vet_flag, analysis.confidence_score]
           );
-        });
+        } catch (error) {
+          console.error("Error saving AI analysis:", error);
+          // This error is logged, but we still proceed to save the main log
+        }
 
       } catch (error) {
         console.error('AI Analysis Process Error:', error);
@@ -160,27 +171,23 @@ const LogPooScreen = ({ navigation }) => {
     }
 
     // Save the poo log itself
-    db.transaction(tx => {
-      tx.executeSql(
+    try {
+      db.runSync(
         'INSERT INTO poo_logs (id, consistency_score, color, mucus_present, blood_visible, worms_visible, notes, photo_uri) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [logId, consistency, color, mucus, blood, worms, notes, photoUri],
-        () => {
-          setIsLoading(false);
-          if (!analysisSkipped) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert('Log Saved!', 'Your poo log has been successfully saved.');
-            navigation.goBack();
-          }
-        },
-        (_, error) => {
-          setIsLoading(false);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('Error', 'Could not save your log. Please try again.');
-          console.error(error);
-          return false;
-        }
+        [logId, consistency, color, mucus, blood, worms, notes, photoUri]
       );
-    });
+      setIsLoading(false);
+      if (!analysisSkipped) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Log Saved!', 'Your poo log has been successfully saved.');
+        navigation.goBack();
+      }
+    } catch (error) {
+      setIsLoading(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Could not save your log. Please try again.');
+      console.error(error);
+    }
   };
 
   return (
@@ -190,145 +197,184 @@ const LogPooScreen = ({ navigation }) => {
         animationType="fade"
         visible={isLoading}
       >
-        <View className="flex-1 justify-center items-center bg-black/50">
-          <View className="bg-surface p-8 rounded-lg items-center shadow-lg">
+        <View className="flex-1 justify-center items-center bg-black/60">
+          <View className="bg-surface p-8 rounded-3xl items-center shadow-2xl w-3/4">
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text className="mt-4 text-lg text-center text-text_secondary">{loadingMessage}</Text>
+            <Text className="mt-4 text-lg font-medium text-center text-text_primary">{loadingMessage}</Text>
           </View>
         </View>
       </Modal>
 
       <ScrollView className="p-4" showsVerticalScrollIndicator={false}>
-        <View className="mb-4">
-          <Text className="text-lg font-semibold mb-2 text-text_primary">Photo (Optional)</Text>
-          <View className="flex-row">
+        {!photoUri ? (
+          <View className="mb-8 mt-4">
+            <Text className="text-3xl font-bold text-center text-text_primary mb-2">Let's check that poo!</Text>
+            <Text className="text-center text-text_secondary mb-8 text-base">AI Analysis is the best way to track health.</Text>
+            
             <TouchableOpacity
-              className="bg-secondary p-4 rounded-lg mr-2 flex-1 items-center justify-center"
+              className="bg-primary p-8 rounded-3xl mb-4 shadow-lg shadow-primary/30 items-center"
               onPress={takePhoto}
               disabled={isLoading}
             >
-              <Text className="text-text_on_primary text-center text-lg font-bold">Take Photo</Text>
+              <View className="bg-white/20 p-4 rounded-full mb-3">
+                <Ionicons name="camera" size={48} color="white" />
+              </View>
+              <Text className="text-text_on_primary text-center text-xl font-bold">Take Photo</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              className="bg-surface border border-border p-4 rounded-lg flex-1 items-center justify-center"
+              className="bg-surface border border-border p-6 rounded-3xl mb-8 items-center"
               onPress={pickImage}
               disabled={isLoading}
             >
-              <Text className="text-text_primary text-center text-lg font-bold">From Gallery</Text>
+              <Ionicons name="images-outline" size={32} color={Colors.primary} />
+              <Text className="text-primary text-center text-lg font-bold mt-2">Select from Gallery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => setShowManualEntry(!showManualEntry)}
+              className="p-4"
+            >
+              <Text className="text-center text-text_muted underline">
+                {showManualEntry ? "Hide manual entry" : "Log manually without photo"}
+              </Text>
             </TouchableOpacity>
           </View>
-          {photoUri && (
-            <Image source={{ uri: photoUri }} className="mt-4 w-full h-48 rounded-lg" resizeMode="cover" />
-          )}
-        </View>
-
-        <View className="mb-4 p-4 bg-surface rounded-lg border border-border">
-          <Text className="text-lg font-semibold mb-2 text-text_primary">Consistency</Text>
-          <Slider
-            value={consistency}
-            onValueChange={setConsistency}
-            minimumValue={1}
-            maximumValue={5}
-            step={1}
-            minimumTrackTintColor={Colors.primary}
-            maximumTrackTintColor={Colors.border}
-            thumbTintColor={Colors.primary}
-          />
-          <View className="flex-row justify-between mt-2 px-1">
-            {Object.entries(consistencyLabels).map(([key, label]) => (
-              <Text key={key} className="text-xs text-text_secondary">
-                {label}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        <View className="mb-4">
-          <Text className="text-lg font-semibold mb-2 text-text_primary">Color</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 px-4">
-            {colorOptions.map(option => (
-              <TouchableOpacity
-                key={option.value}
-                className={`p-3 rounded-lg mr-2 items-center justify-center h-24 w-24 ${color === option.value ? 'bg-secondary' : 'bg-surface border border-border'}`}
-                onPress={() => setColor(option.value)}
-                disabled={isLoading}
+        ) : (
+          <View className="mb-6">
+            <View className="shadow-lg shadow-black/20 rounded-3xl mb-6">
+              <Image source={{ uri: photoUri }} className="w-full h-80 rounded-3xl" resizeMode="cover" />
+              <TouchableOpacity 
+                className="absolute top-4 right-4 bg-black/50 p-2 rounded-full"
+                onPress={() => setPhotoUri(null)}
               >
-                <Text className={`text-center font-medium ${color === option.value ? 'text-text_on_primary' : 'text-text_primary'}`}>
-                  {option.label}
-                </Text>
+                <Ionicons name="close" size={24} color="white" />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View className="mb-4 p-4 bg-surface rounded-lg border border-border">
-          <Text className="text-lg font-semibold mb-2 text-text_primary">Additional Symptoms</Text>
-          <View className="flex-row justify-around pt-2">
-            <View className="items-center">
-              <Text className="text-text_secondary mb-2">Mucus</Text>
-              <Switch
-                value={mucus}
-                onValueChange={setMucus}
-                trackColor={{ false: Colors.border, true: Colors.primary_light }}
-                thumbColor={Colors.primary}
-                ios_backgroundColor={Colors.border}
-              />
             </View>
-            <View className="items-center">
-              <Text className="text-text_secondary mb-2">Blood</Text>
-              <Switch
-                value={blood}
-                onValueChange={setBlood}
-                trackColor={{ false: Colors.border, true: Colors.primary_light }}
-                thumbColor={Colors.primary}
-                ios_backgroundColor={Colors.border}
-              />
-            </View>
-            <View className="items-center">
-              <Text className="text-text_secondary mb-2">Worms</Text>
-              <Switch
-                value={worms}
-                onValueChange={setWorms}
-                trackColor={{ false: Colors.border, true: Colors.primary_light }}
-                thumbColor={Colors.primary}
-                ios_backgroundColor={Colors.border}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View className="mb-4">
-          <Text className="text-lg font-semibold mb-2 text-text_primary">Notes</Text>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            className="border border-border bg-surface rounded-lg p-4 text-text_primary h-24"
-            placeholder="Any additional notes about their diet, behavior, etc..."
-            placeholderTextColor={Colors.text_muted}
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
-
-        {/* Action Buttons */}
-        <View className="my-4">
-          <TouchableOpacity
-            className="bg-primary p-4 rounded-lg mb-3 shadow"
-            onPress={() => handleSave(false)}
-            disabled={isLoading}
-          >
-            <Text className="text-text_on_primary text-center text-lg font-bold">Save Log</Text>
-          </TouchableOpacity>
-          {photoUri && (
+            
             <TouchableOpacity
-              className="bg-secondary p-4 rounded-lg shadow"
+              className="bg-primary p-5 rounded-2xl mb-4 shadow-lg shadow-primary/30 flex-row justify-center items-center"
               onPress={() => handleSave(true)}
               disabled={isLoading}
             >
-              <Text className="text-text_on_primary text-center text-lg font-bold">Save & Analyze with AI</Text>
+              <Ionicons name="sparkles" size={24} color="white" style={{ marginRight: 8 }} />
+              <Text className="text-text_on_primary text-center text-xl font-bold">Analyze with AI</Text>
             </TouchableOpacity>
-          )}
-        </View>
+
+            <TouchableOpacity
+              className="bg-surface border border-border p-4 rounded-2xl items-center mb-4"
+              onPress={() => setShowManualEntry(!showManualEntry)}
+              disabled={isLoading}
+            >
+              <Text className="text-text_primary font-semibold text-base">{showManualEntry ? "Hide Details" : "Add Manual Details"}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {(showManualEntry || (photoUri && showManualEntry)) && (
+          <View className="animate-fade-in pb-10">
+            <View className="mb-6 p-5 bg-surface rounded-3xl border border-border shadow-sm">
+              <Text className="text-lg font-bold mb-4 text-text_primary">Consistency</Text>
+              <Slider
+                value={consistency}
+                onValueChange={setConsistency}
+                minimumValue={1}
+                maximumValue={5}
+                step={1}
+                minimumTrackTintColor={Colors.primary}
+                maximumTrackTintColor={Colors.border}
+                thumbTintColor={Colors.primary}
+              />
+              <View className="flex-row justify-between mt-2 px-1">
+                {Object.entries(consistencyLabels).map(([key, label]) => (
+                  <Text key={key} className={`text-xs ${parseInt(key) === consistency ? 'text-primary font-bold' : 'text-text_secondary'}`}>
+                    {label}
+                  </Text>
+                ))}
+              </View>
+            </View>
+
+            <View className="mb-6">
+              <Text className="text-lg font-bold mb-3 text-text_primary ml-1">Color</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 px-4">
+                {colorOptions.map(option => (
+                  <TouchableOpacity
+                    key={option.value}
+                    className={`p-3 rounded-3xl mr-3 items-center justify-center h-32 w-28 ${color === option.value ? 'bg-primary_light border-2 border-primary' : 'bg-surface border border-border'}`}
+                    onPress={() => setColor(option.value)}
+                    disabled={isLoading}
+                  >
+                    <View 
+                      style={{ backgroundColor: getColorHex(option.value) }} 
+                      className="w-14 h-14 rounded-full mb-3 border border-gray-200 shadow-sm"
+                    />
+                    <Text className={`text-center text-xs font-medium ${color === option.value ? 'text-primary_dark' : 'text-text_primary'}`}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View className="mb-6 p-5 bg-surface rounded-3xl border border-border shadow-sm">
+              <Text className="text-lg font-bold mb-4 text-text_primary">Additional Symptoms</Text>
+              <View className="space-y-4">
+                <View className="flex-row justify-between items-center border-b border-border pb-3">
+                  <Text className="text-text_primary text-base">Mucus</Text>
+                  <Switch
+                    value={mucus}
+                    onValueChange={setMucus}
+                    trackColor={{ false: Colors.border, true: Colors.primary_light }}
+                    thumbColor={mucus ? Colors.primary : '#f4f3f4'}
+                    ios_backgroundColor={Colors.border}
+                  />
+                </View>
+                <View className="flex-row justify-between items-center border-b border-border pb-3">
+                  <Text className="text-text_primary text-base">Blood</Text>
+                  <Switch
+                    value={blood}
+                    onValueChange={setBlood}
+                    trackColor={{ false: Colors.border, true: Colors.primary_light }}
+                    thumbColor={blood ? Colors.primary : '#f4f3f4'}
+                    ios_backgroundColor={Colors.border}
+                  />
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-text_primary text-base">Worms</Text>
+                  <Switch
+                    value={worms}
+                    onValueChange={setWorms}
+                    trackColor={{ false: Colors.border, true: Colors.primary_light }}
+                    thumbColor={worms ? Colors.primary : '#f4f3f4'}
+                    ios_backgroundColor={Colors.border}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className="mb-6">
+              <Text className="text-lg font-bold mb-3 text-text_primary ml-1">Notes</Text>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                className="border border-border bg-surface rounded-3xl p-5 text-text_primary h-32 text-base"
+                placeholder="Any additional notes about their diet, behavior, etc..."
+                placeholderTextColor={Colors.text_muted}
+                multiline
+                textAlignVertical="top"
+              />
+            </View>
+
+            {/* Manual Save Button (only if photo not present, or if user wants to save manually) */}
+            <TouchableOpacity
+              className="bg-secondary p-5 rounded-2xl mb-8 shadow-lg"
+              onPress={() => handleSave(false)}
+              disabled={isLoading}
+            >
+              <Text className="text-text_on_primary text-center text-lg font-bold">Save Log Manually</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

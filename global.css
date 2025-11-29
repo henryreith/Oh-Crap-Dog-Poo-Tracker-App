@@ -1,3 +1,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 45 94 63; /* #2D5E3F */
+    --color-primary-light: 232 245 233; /* #E8F5E9 */
+    --color-primary-dark: 27 62 40; /* #1B3E28 */
+    
+    --color-secondary: 141 110 99; /* #8D6E63 */
+    --color-accent: 255 183 77; /* #FFB74D */
+
+    --color-background: 245 247 250; /* #F5F7FA */
+    --color-surface: 255 255 255; /* #FFFFFF */
+    --color-surface-highlight: 243 244 246; /* #F3F4F6 */
+
+    --color-text-primary: 17 24 39; /* #111827 */
+    --color-text-secondary: 75 85 99; /* #4B5563 */
+    --color-text-muted: 156 163 175; /* #9CA3AF */
+    --color-text-on-primary: 255 255 255; /* #FFFFFF */
+
+    --color-border: 229 231 235; /* #E5E7EB */
+    
+    --color-error: 239 68 68; /* #EF4444 */
+    --color-success: 45 94 63; /* #2D5E3F */
+  }
+
+  .dark {
+    --color-primary: 45 94 63; /* #2D5E3F - Keep brand color */
+    --color-primary-light: 27 62 40; /* #1B3E28 - Darker for dark mode bg */
+    --color-primary-dark: 232 245 233; /* #E8F5E9 */
+
+    --color-background: 15 23 42; /* #0F172A - Slate 900 */
+    --color-surface: 30 41 59; /* #1E293B - Slate 800 */
+    --color-surface-highlight: 51 65 85; /* #334155 - Slate 700 */
+
+    --color-text-primary: 249 250 251; /* #F9FAFB */
+    --color-text-secondary: 156 163 175; /* #9CA3AF */
+    --color-text-muted: 107 114 128; /* #6B7280 */
+    --color-text-on-primary: 255 255 255; /* #FFFFFF */
+
+    --color-border: 51 65 85; /* #334155 */
+  }
+}
