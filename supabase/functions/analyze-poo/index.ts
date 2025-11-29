@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
                     "details": {
                       "shape": { "description": "string", "signals": ["string"] },
                       "texture": { "description": "string", "possible_interpretations": ["string"] },
-                      "color": { "description": "string", "possible_interpretations": ["string"] },
-                      "moisture": { "description": "string", "signals": ["string"] },
+                      "colour": { "description": "string", "possible_interpretations": ["string"] },
+                      "moisture_and_hydration": { "description": "string", "signals": ["string"] },
                       "parasite_check": { "visible_signs": "string", "notes": "string" }
                     },
                     "potential_flags": {
@@ -69,6 +69,11 @@ Deno.serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenAI API Error (${response.status}): ${errText}`);
+    }
+
     const aiData = await response.json();
     
     if (aiData.error) {
@@ -87,7 +92,13 @@ Deno.serve(async (req) => {
         classification: analysis.classification,
         health_score: Math.round(analysis.score * 10), // Convert 0-10 to 0-100
         gut_health_summary: analysis.gut_health_summary,
-        detailed_breakdown: analysis.details, // Map 'details' to 'detailed_breakdown'
+        detailed_breakdown: {
+          shape: analysis.details.shape,
+          texture: analysis.details.texture,
+          colour: analysis.details.colour || analysis.details.color,
+          moisture_and_hydration: analysis.details.moisture_and_hydration || analysis.details.moisture,
+          parasite_check: analysis.details.parasite_check
+        },
         flags_and_observations: analysis.potential_flags.minor_observations,
         actionable_recommendations: analysis.recommendations,
         vet_flag: !analysis.potential_flags.none_major,
@@ -103,7 +114,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }
 })

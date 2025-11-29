@@ -143,8 +143,14 @@ const LogPooScreen = ({ navigation }) => {
 
         if (analysisError) {
             console.error("Analysis Error:", analysisError);
-            throw new Error("The AI analysis function failed.");
+            // Extract specific error message if possible
+            const errorMessage = analysisError.message || JSON.stringify(analysisError);
+            throw new Error(`AI Function Error: ${errorMessage}`);
         };
+
+        if (analysisData?.error) {
+            throw new Error(`AI Error: ${analysisData.error}`);
+        }
         
         const analysis = analysisData?.poo_analysis;
 
