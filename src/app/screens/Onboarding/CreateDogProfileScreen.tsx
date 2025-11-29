@@ -26,8 +26,13 @@ const CreateDogProfileScreen = ({ navigation }: { navigation: any }) => {
       weight: parseFloat(weight),
     };
 
-    // Pass profile data to EmailSignup screen instead of creating it immediately
-    navigation.navigate('EmailSignup', { profileData });
+    try {
+      await createProfile(profileData);
+      // Navigate directly to Home, skipping EmailSignup
+      // The AppNavigator will automatically switch to Home stack because 'profile' context will update
+    } catch (error) {
+      Alert.alert('Error', 'Could not create profile. Please try again.');
+    }
   };
 
   return (
@@ -77,7 +82,7 @@ const CreateDogProfileScreen = ({ navigation }: { navigation: any }) => {
                   placeholderTextColor={Colors.text_muted}
                   value={age}
                   onChangeText={setAge}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                 />
               </View>
 
@@ -89,7 +94,7 @@ const CreateDogProfileScreen = ({ navigation }: { navigation: any }) => {
                   placeholderTextColor={Colors.text_muted}
                   value={weight}
                   onChangeText={setWeight}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                 />
               </View>
             </View>

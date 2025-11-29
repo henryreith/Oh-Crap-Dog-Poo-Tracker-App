@@ -102,6 +102,34 @@ const LogPooScreen = ({ navigation }) => {
 
   const handleSave = async (withAi: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    if (withAi) {
+      // Check monthly limit
+      try {
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+        const logs = db.getAllSync<{ created_at: string }>(
+          `SELECT created_at FROM poo_logs WHERE strftime('%Y-%m', created_at) = ?`,
+          [currentMonth]
+        );
+        
+        // Simple limit check (e.g., 50 logs per month)
+        if (logs.length >= 50) {
+          Alert.alert(
+            'Monthly Limit Reached', 
+            'You have reached your limit of 50 AI analyses for this month. You can still log manually.',
+            [
+              { text: 'Log Manually', onPress: () => handleSave(false) },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking log limit:', error);
+        // Continue if check fails (fail open)
+      }
+    }
+
     setIsLoading(true);
     setLoadingMessage('Saving Log...');
     const logId = uuidv4();

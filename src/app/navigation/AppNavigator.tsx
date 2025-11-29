@@ -88,7 +88,7 @@ const AppNavigator = () => {
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
             <Stack.Screen name="CreateDogProfile" component={CreateDogProfileScreen} />
-            <Stack.Screen name="EmailSignup" component={EmailSignupScreen} />
+            {/* <Stack.Screen name="EmailSignup" component={EmailSignupScreen} /> */}
           </Stack.Group>
         )}
       </Stack.Navigator>
