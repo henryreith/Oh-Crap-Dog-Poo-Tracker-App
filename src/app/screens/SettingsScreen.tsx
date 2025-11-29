@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useProfile } from '../../../hooks/useProfile';
-import { db } from '../../../lib/sqlite';
+import { useProfile } from '../../hooks/useProfile';
+import { db } from '../../lib/sqlite';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';

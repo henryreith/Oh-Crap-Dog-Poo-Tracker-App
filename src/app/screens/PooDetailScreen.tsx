@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
-import { db } from '../../../lib/sqlite';
-import { PooLog, AIAnalysis } from '../../../types';
+import { db } from '../../lib/sqlite';
+import { PooLog, AIAnalysis } from '../../types';
 import * as Haptics from 'expo-haptics';
 
 const PooDetailScreen = ({ route, navigation }) => {

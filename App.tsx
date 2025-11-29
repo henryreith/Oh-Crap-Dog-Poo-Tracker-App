@@ -1,4 +1,4 @@
-import "nativewind/tailwind";
+import "./global.css";
 import React from 'react';
 import AppNavigator from './src/app/navigation/AppNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

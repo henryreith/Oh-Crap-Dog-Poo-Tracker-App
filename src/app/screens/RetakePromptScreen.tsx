@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { db } from '../../../lib/sqlite';
+import { db } from '../../lib/sqlite';
 import { v4 as uuidv4 } from 'uuid';
 
 const RetakePromptScreen = ({ navigation, route }) => {

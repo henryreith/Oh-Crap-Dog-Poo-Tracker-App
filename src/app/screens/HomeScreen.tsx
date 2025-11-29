@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useProfile } from '../../../hooks/useProfile';
+import { useProfile } from '../../hooks/useProfile';
 import { useFocusEffect } from '@react-navigation/native';
-import { db } from '../../../lib/sqlite';
-import { PooLog } from '../../../types';
+import { db } from '../../lib/sqlite';
+import { PooLog } from '../../types';
 import * as Haptics from 'expo-haptics';
 
 const HomeScreen = ({ navigation }) => {

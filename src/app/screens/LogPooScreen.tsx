@@ -5,13 +5,13 @@ import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
-import { PooLog } from '../../../types';
-import { db } from '../../../lib/sqlite';
-import { supabase } from '../../../lib/supabase';
+import { PooLog } from '../../types';
+import { db } from '../../lib/sqlite';
+import { supabase } from '../../lib/supabase';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../../../constants/Colors';
+import { Colors } from '../../constants/Colors';
 
 const consistencyLabels = {
   1: 'Very Loose',
@@ -325,4 +325,13 @@ const LogPooScreen = ({ navigation }) => {
               onPress={() => handleSave(true)}
               disabled={isLoading}
             >
-              <Text className="text-text_on_primary text-center text-lg font
+              <Text className="text-text_on_primary text-center text-lg font-bold">Save & Analyze with AI</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+export default LogPooScreen;
