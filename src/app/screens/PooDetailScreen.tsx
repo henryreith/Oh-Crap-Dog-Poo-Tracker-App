@@ -208,7 +208,7 @@ const PooDetailScreen = ({ route, navigation }) => {
         {analysis && (
           <View className="mb-6 p-6 bg-primary_light rounded-3xl items-center border border-primary shadow-sm">
               <Image 
-                source={require('../../../assets/images/icon.png')} 
+                source={require('../../../assets/images/logo.png')} 
                 className="w-16 h-16 rounded-2xl mb-4"
                 style={{ tintColor: Colors.primary }} // Optional tint if icon is monochrome
               />
