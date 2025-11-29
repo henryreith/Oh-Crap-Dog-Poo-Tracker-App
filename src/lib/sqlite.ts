@@ -3,6 +3,9 @@ import * as SQLite from 'expo-sqlite';
 export const db = SQLite.openDatabaseSync('dog-poo.db');
 
 export const initDatabase = () => {
+  // Temporary: Drop table to ensure schema update during dev
+  // db.execSync('DROP TABLE IF EXISTS ai_analysis;'); 
+
   db.execSync(`
     CREATE TABLE IF NOT EXISTS dog_profile (
       id INTEGER PRIMARY KEY NOT NULL,

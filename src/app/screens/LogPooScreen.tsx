@@ -108,6 +108,13 @@ const LogPooScreen = ({ navigation }) => {
     let publicPhotoUrl: string | null = null;
     let analysisSkipped = false;
 
+    const saveLogToDb = () => {
+      db.runSync(
+        'INSERT INTO poo_logs (id, consistency_score, color, mucus_present, blood_visible, worms_visible, notes, photo_uri) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [logId, consistency, color, mucus, blood, worms, notes, photoUri]
+      );
+    };
+
     if (withAi && photoUri) {
       try {
         setLoadingMessage('Uploading photo...');
@@ -173,6 +180,9 @@ const LogPooScreen = ({ navigation }) => {
           return; // Stop execution here
         }
 
+        // Save Log FIRST to avoid Foreign Key constraint violation
+        saveLogToDb();
+
         // Save analysis to SQLite
         setLoadingMessage('Saving analysis...');
         try {
@@ -198,8 +208,14 @@ const LogPooScreen = ({ navigation }) => {
           );
         } catch (error) {
           console.error("Error saving AI analysis:", error);
-          // This error is logged, but we still proceed to save the main log
+          // This error is logged, but the log is already saved.
         }
+
+        setIsLoading(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Log Saved!', 'Your poo log has been successfully saved.');
+        navigation.goBack();
+        return;
 
       } catch (error) {
         console.error('AI Analysis Process Error:', error);
@@ -210,12 +226,9 @@ const LogPooScreen = ({ navigation }) => {
       }
     }
 
-    // Save the poo log itself
+    // Save the poo log itself (Manual or Fallback)
     try {
-      db.runSync(
-        'INSERT INTO poo_logs (id, consistency_score, color, mucus_present, blood_visible, worms_visible, notes, photo_uri) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [logId, consistency, color, mucus, blood, worms, notes, photoUri]
-      );
+      saveLogToDb();
       setIsLoading(false);
       if (!analysisSkipped) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

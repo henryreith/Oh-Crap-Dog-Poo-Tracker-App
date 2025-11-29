@@ -24,6 +24,7 @@ const PooDetailScreen = ({ route, navigation }) => {
       }
 
       const analysisResult = db.getFirstSync<AIAnalysis>('SELECT * FROM ai_analysis WHERE poo_log_id = ?;', [logId]);
+      console.log('Fetched Analysis for Log:', logId, analysisResult ? 'Found' : 'Not Found');
       if (analysisResult) {
         setAnalysis(analysisResult);
       }
