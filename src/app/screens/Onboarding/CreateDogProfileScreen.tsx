@@ -26,13 +26,8 @@ const CreateDogProfileScreen = ({ navigation }: { navigation: any }) => {
       weight: parseFloat(weight),
     };
 
-    try {
-      await createProfile(profileData);
-      navigation.navigate('EmailSignup');
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Could not save profile. Please try again.');
-    }
+    // Pass profile data to EmailSignup screen instead of creating it immediately
+    navigation.navigate('EmailSignup', { profileData });
   };
 
   return (

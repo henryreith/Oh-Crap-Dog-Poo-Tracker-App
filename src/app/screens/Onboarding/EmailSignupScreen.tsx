@@ -4,10 +4,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
+import { useProfile } from '../../../hooks/useProfile';
 
-const EmailSignupScreen = ({ navigation }: { navigation: any }) => {
+const EmailSignupScreen = ({ navigation, route }: { navigation: any, route: any }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const { createProfile } = useProfile();
+  const { profileData } = route.params || {};
+
+  const finalizeOnboarding = async () => {
+    if (profileData) {
+      try {
+        await createProfile(profileData);
+        // Navigation to Home happens automatically via AppNavigator when profile is set
+      } catch (error) {
+        console.error('Error creating profile:', error);
+        Alert.alert('Error', 'Could not create profile. Please try again.');
+      }
+    } else {
+      // Fallback if no profile data (shouldn't happen in normal flow)
+      navigation.navigate('Home');
+    }
+  };
 
   const handleSignup = async () => {
     if (!email) {
@@ -16,23 +34,27 @@ const EmailSignupScreen = ({ navigation }: { navigation: any }) => {
     }
     setLoading(true);
     const { error } = await supabase.from('email_signups').insert({ email });
-    setLoading(false);
-
+    
     if (error) {
+      setLoading(false);
       if (error.code === '23505') { // Unique constraint violation
-        Alert.alert('Already Signed Up', 'This email has already been registered. Thank you!');
+        Alert.alert('Already Signed Up', 'This email has already been registered. Thank you!', [
+          { text: 'OK', onPress: finalizeOnboarding }
+        ]);
       } else {
         Alert.alert('Error', 'Could not sign up. Please try again.');
         console.error('Supabase error:', error);
       }
     } else {
-      Alert.alert('Thanks for signing up!', 'You will now be taken to the home screen.');
+      setLoading(false);
+      Alert.alert('Thanks for signing up!', 'You will now be taken to the home screen.', [
+        { text: 'OK', onPress: finalizeOnboarding }
+      ]);
     }
-    navigation.navigate('Home');
   };
 
   const handleSkip = () => {
-    navigation.navigate('Home');
+    finalizeOnboarding();
   };
 
   return (
