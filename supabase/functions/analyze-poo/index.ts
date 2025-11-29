@@ -21,7 +21,15 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content: `You are a veterinary AI expert specializing in canine digestive health. Analyze the dog poo image and provided metadata. 
-            Return ONLY valid JSON matching the requested structure. Do not include markdown formatting.`
+            
+            CRITICAL: You must ALWAYS return valid JSON, even if the image is not dog poo or you cannot analyze it.
+            If the image is not dog poo (e.g. a car, a person, a random object), return the JSON with:
+            - "classification": "Not Poo / Unknown"
+            - "score": 0
+            - "confidence_score": 0
+            - "gut_health_summary": "This image does not appear to be dog poo. Please upload a clear photo of dog waste for analysis."
+            
+            Do not include markdown formatting (no \`\`\`json). Return raw JSON only.`
           },
           {
             role: "user",
@@ -83,7 +91,32 @@ Deno.serve(async (req) => {
     const content = aiData.choices[0].message.content;
     // Clean up potential markdown code blocks if GPT adds them
     const cleanContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsedResult = JSON.parse(cleanContent);
+    
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(cleanContent);
+    } catch (e) {
+      console.error("Failed to parse OpenAI response:", cleanContent);
+      // Fallback for non-JSON responses (e.g. refusals)
+      parsedResult = {
+        poo_analysis: {
+          classification: "Analysis Failed",
+          score: 0,
+          gut_health_summary: "The AI could not analyze this image. It may not be clear enough, or it might not be recognized as dog poo.",
+          details: {
+            shape: { description: "Unknown", signals: [] },
+            texture: { description: "Unknown", possible_interpretations: [] },
+            colour: { description: "Unknown", possible_interpretations: [] },
+            moisture_and_hydration: { description: "Unknown", signals: [] },
+            parasite_check: { visible_signs: "None", notes: "Could not analyze" }
+          },
+          potential_flags: { none_major: false, minor_observations: [] },
+          recommendations: ["Try taking a clearer photo", "Ensure the photo is of dog poo"],
+          confidence_score: 0
+        }
+      };
+    }
+
     const analysis = parsedResult.poo_analysis;
 
     // Transform to match the App's expected schema
