@@ -43,6 +43,16 @@ const HomeScreen = ({ navigation }) => {
     return 'Good evening';
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="px-6 pt-2 pb-6">
