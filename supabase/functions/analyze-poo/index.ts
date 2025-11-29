@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 Deno.serve(async (req) => {
   try {
-    const { photo_url, consistency_score, colour_code, notes } = await req.json();
+    const { photo_url, image_base64, consistency_score, colour_code, notes } = await req.json();
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "gpt-4o",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
               {
                 type: "image_url",
                 image_url: {
-                  url: photo_url,
+                  url: image_base64 || photo_url,
                 },
               },
             ],

@@ -132,6 +132,7 @@ const LogPooScreen = ({ navigation }) => {
         const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-poo', {
           body: {
             photo_url: publicPhotoUrl,
+            image_base64: `data:image/${fileExt === 'jpg' ? 'jpeg' : fileExt};base64,${base64}`,
             consistency_score: consistency,
             colour_code: color,
             mucus_present: mucus,
