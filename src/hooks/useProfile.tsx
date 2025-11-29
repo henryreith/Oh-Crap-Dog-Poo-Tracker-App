@@ -7,11 +7,13 @@ export const ProfileContext = createContext<{
   loading: boolean;
   createProfile: (profile: Omit<DogProfile, 'id'>) => Promise<void>;
   updateProfile: (profile: DogProfile) => Promise<void>;
+  clearProfile: () => Promise<void>;
 }>({
   profile: null,
   loading: true,
   createProfile: async () => {},
   updateProfile: async () => {},
+  clearProfile: async () => {},
 });
 
 export const useProfile = () => useContext(ProfileContext);
@@ -64,8 +66,18 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const clearProfile = async () => {
+    try {
+      db.runSync('DELETE FROM dog_profile;');
+      setProfile(null);
+    } catch (error) {
+      console.error('Error clearing profile:', error);
+      throw error;
+    }
+  };
+
   return (
-    <ProfileContext.Provider value={{ profile, loading, createProfile, updateProfile }}>
+    <ProfileContext.Provider value={{ profile, loading, createProfile, updateProfile, clearProfile }}>
       {children}
     </ProfileContext.Provider>
   );

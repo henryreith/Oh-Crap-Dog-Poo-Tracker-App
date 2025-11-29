@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
 const SettingsScreen = ({ navigation }) => {
-  const { profile, updateProfile, loading } = useProfile();
+  const { profile, updateProfile, loading, clearProfile } = useProfile();
   const [name, setName] = useState(profile?.name || '');
   const [breed, setBreed] = useState(profile?.breed || '');
   const [age, setAge] = useState(profile?.age.toString() || '');
@@ -47,15 +47,13 @@ const SettingsScreen = ({ navigation }) => {
     );
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     try {
       db.runSync('DELETE FROM poo_logs;');
       db.runSync('DELETE FROM ai_analysis;');
-      db.runSync('DELETE FROM dog_profile;');
+      await clearProfile();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Data Cleared', 'All application data has been removed.', [
-        { text: 'OK', onPress: () => navigation.navigate('Onboarding') },
-      ]);
+      // Navigation happens automatically via AppNavigator when profile becomes null
     } catch (error) {
       console.error("Failed to clear data", error);
       Alert.alert('Error', 'Could not clear all data.');
