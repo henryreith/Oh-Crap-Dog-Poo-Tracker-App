@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../../constants/Colors';
 
-const EmailSignupScreen = ({ navigation }) => {
+const EmailSignupScreen = ({ navigation }: { navigation: any }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,34 +36,55 @@ const EmailSignupScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white p-4 justify-center">
-      <Text className="text-2xl font-bold text-center mb-2">Stay in the loop</Text>
-      <Text className="text-lg text-center text-gray-600 mb-8">
-        Get occasional dog health tips and exclusive Oh Crap offers.
-      </Text>
-      <View className="mb-4">
-        <TextInput
-          className="border border-gray-300 p-3 rounded-lg"
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-      </View>
-      <TouchableOpacity
-        className={`p-4 rounded-lg ${loading ? 'bg-gray-400' : 'bg-primary'}`}
-        onPress={handleSignup}
-        disabled={loading}
+    <SafeAreaView className="flex-1 bg-background">
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
       >
-        <Text className="text-white text-center text-lg">{loading ? 'Signing up...' : 'Sign Me Up'}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        className="mt-4"
-        onPress={handleSkip}
-      >
-        <Text className="text-gray-500 text-center">Skip</Text>
-      </TouchableOpacity>
+        <ScrollView className="flex-1 px-6 pt-10" showsVerticalScrollIndicator={false}>
+          <View className="items-center mb-10">
+            <View className="bg-primary/10 p-5 rounded-full mb-6">
+              <Ionicons name="mail-open" size={48} color={Colors.primary} />
+            </View>
+            <Text className="text-3xl font-bold text-center mb-3 text-text_primary">Stay in the loop</Text>
+            <Text className="text-text_secondary text-center text-base px-4">
+              Get occasional dog health tips and exclusive Oh Crap offers.
+            </Text>
+          </View>
+
+          <View className="bg-surface p-6 rounded-3xl border border-border shadow-sm mb-8">
+            <View className="mb-2">
+              <Text className="text-text_secondary mb-2 ml-1 font-medium">Email Address</Text>
+              <TextInput
+                className="border border-border rounded-2xl p-4 bg-background text-text_primary text-base"
+                placeholder="you@example.com"
+                placeholderTextColor={Colors.text_muted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            className={`p-5 rounded-2xl shadow-lg ${loading ? 'bg-surface_highlight shadow-none' : 'bg-primary shadow-primary/30'} mb-4`}
+            onPress={handleSignup}
+            disabled={loading}
+          >
+            <Text className={`text-center text-xl font-bold ${loading ? 'text-text_secondary' : 'text-text_on_primary'}`}>
+              {loading ? 'Signing up...' : 'Sign Me Up'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="p-4"
+            onPress={handleSkip}
+          >
+            <Text className="text-text_secondary text-center font-medium text-base">No thanks, maybe later</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
