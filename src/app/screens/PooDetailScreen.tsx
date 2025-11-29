@@ -94,7 +94,9 @@ const PooDetailScreen = ({ route, navigation }) => {
               {Object.entries(parsed).map(([k, v]) => (
                 <View key={k} className="flex-row mb-1">
                   <Text className="text-text_primary font-semibold mr-2 capitalize">{k.replace(/_/g, ' ')}:</Text>
-                  <Text className="text-text_secondary flex-1">{String(v)}</Text>
+                  <Text className="text-text_secondary flex-1">
+                    {Array.isArray(v) ? v.join(', ') : String(v)}
+                  </Text>
                 </View>
               ))}
             </View>

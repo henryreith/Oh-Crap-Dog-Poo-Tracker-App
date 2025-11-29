@@ -176,9 +176,25 @@ const LogPooScreen = ({ navigation }) => {
         // Save analysis to SQLite
         setLoadingMessage('Saving analysis...');
         try {
+          console.log("Saving AI Analysis:", JSON.stringify(analysis, null, 2));
           db.runSync(
             'INSERT INTO ai_analysis (id, poo_log_id, classification, health_score, gut_health_summary, shape_analysis, texture_analysis, color_analysis, moisture_analysis, parasite_check_results, flags_and_observations, actionable_recommendations, vet_flag, confidence_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [uuidv4(), logId, analysis.classification, analysis.health_score, analysis.gut_health_summary, JSON.stringify(analysis.detailed_breakdown.shape), JSON.stringify(analysis.detailed_breakdown.texture), JSON.stringify(analysis.detailed_breakdown.colour), JSON.stringify(analysis.detailed_breakdown.moisture_and_hydration), JSON.stringify(analysis.detailed_breakdown.parasite_check), JSON.stringify(analysis.flags_and_observations), JSON.stringify(analysis.actionable_recommendations), analysis.vet_flag, analysis.confidence_score]
+            [
+              uuidv4(), 
+              logId, 
+              analysis.classification || 'Unknown', 
+              analysis.health_score || 0, 
+              analysis.gut_health_summary || 'No summary available', 
+              JSON.stringify(analysis.detailed_breakdown?.shape || {}), 
+              JSON.stringify(analysis.detailed_breakdown?.texture || {}), 
+              JSON.stringify(analysis.detailed_breakdown?.colour || {}), 
+              JSON.stringify(analysis.detailed_breakdown?.moisture_and_hydration || {}), 
+              JSON.stringify(analysis.detailed_breakdown?.parasite_check || {}), 
+              JSON.stringify(analysis.flags_and_observations || []), 
+              JSON.stringify(analysis.actionable_recommendations || []), 
+              analysis.vet_flag ? 1 : 0, 
+              analysis.confidence_score || 0
+            ]
           );
         } catch (error) {
           console.error("Error saving AI analysis:", error);
