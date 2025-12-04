@@ -24,6 +24,14 @@ const TabNavigator = () => {
           height: Platform.OS === 'ios' ? 88 : 60,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: -4,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 5,
         },
         tabBarLabelStyle: {
           fontWeight: '600',

@@ -9,7 +9,7 @@ export type DogProfile = {
 export type PooLog = {
   id: string;
   consistency_score: number;
-  color: 'normal_brown' | 'greenish' | 'yellow_orange' | 'greasy_gray' | 'black_tarry' | 'red_streaks';
+  color: string;
   mucus_present: boolean;
   blood_visible: boolean;
   worms_visible: boolean;
@@ -34,5 +34,6 @@ export type AIAnalysis = {
   actionable_recommendations?: string;
   vet_flag?: boolean;
   confidence_score?: number;
+  hydration_estimate?: string;
   analysed_at: string;
 };

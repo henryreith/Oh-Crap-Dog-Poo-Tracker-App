@@ -42,8 +42,15 @@ export const initDatabase = () => {
       actionable_recommendations TEXT,
       vet_flag INTEGER,
       confidence_score REAL,
+      hydration_estimate TEXT,
       analysed_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (poo_log_id) REFERENCES poo_logs (id)
     );
   `);
+
+  try {
+    db.execSync('ALTER TABLE ai_analysis ADD COLUMN hydration_estimate TEXT;');
+  } catch (e) {
+    // Column likely already exists
+  }
 };

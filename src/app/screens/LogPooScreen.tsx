@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Switch, Image, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Switch, Image, Alert, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
 import * as ImagePicker from 'expo-image-picker';
@@ -54,6 +54,59 @@ const LogPooScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Saving Log...');
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showPhotoTips, setShowPhotoTips] = useState(false);
+  const [monthlyCredits, setMonthlyCredits] = useState<{used: number, limit: number} | null>(null);
+
+  const loadingMessages = [
+    "Sniffing the evidence...",
+    "Consulting the Council of Canines...",
+    "Analyzing texture and bouquet...",
+    "Comparing to the Golden Standard...",
+    "Processing poo parameters...",
+    "Fetching results...",
+    "Digging for answers...",
+    "Calculating crunch factor...",
+    "Evaluating squishiness...",
+    "Decoding the doo-doo...",
+    "Checking for hidden treasures...",
+    "Measuring the moisture matrix...",
+    "Consulting the Turd Table...",
+    "Running the brown noise algorithm...",
+    "Sniff testing (digitally)..."
+  ];
+
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading && loadingMessage !== 'Saving Log...' && loadingMessage !== 'Uploading photo...') {
+      let i = 0;
+      interval = setInterval(() => {
+        setLoadingMessage(loadingMessages[i % loadingMessages.length]);
+        i++;
+      }, 4000);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading, loadingMessage]);
+
+  React.useEffect(() => {
+    const checkCredits = () => {
+      try {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const result = db.getFirstSync<{ count: number }>(
+          `SELECT COUNT(*) as count FROM ai_analysis a 
+           JOIN poo_logs p ON a.poo_log_id = p.id 
+           WHERE strftime('%Y-%m', p.created_at) = ?`,
+          [currentMonth]
+        );
+        setMonthlyCredits({ used: result?.count || 0, limit: 35 });
+      } catch (e) {
+        console.error("Error checking credits:", e);
+      }
+    };
+
+    const unsubscribe = navigation.addListener('focus', checkCredits);
+    checkCredits(); // Run immediately on mount
+    return unsubscribe;
+  }, [navigation]);
 
   const pickImage = async () => {
     try {
@@ -107,16 +160,18 @@ const LogPooScreen = ({ navigation }) => {
       // Check monthly limit
       try {
         const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-        const logs = db.getAllSync<{ created_at: string }>(
-          `SELECT created_at FROM poo_logs WHERE strftime('%Y-%m', created_at) = ?`,
+        const result = db.getFirstSync<{ count: number }>(
+          `SELECT COUNT(*) as count FROM ai_analysis a 
+           JOIN poo_logs p ON a.poo_log_id = p.id 
+           WHERE strftime('%Y-%m', p.created_at) = ?`,
           [currentMonth]
         );
         
-        // Simple limit check (e.g., 50 logs per month)
-        if (logs.length >= 50) {
+        // Simple limit check (e.g., 35 logs per month)
+        if ((result?.count || 0) >= 35) {
           Alert.alert(
             'Monthly Limit Reached', 
-            'You have reached your limit of 50 AI analyses for this month. You can still log manually.',
+            'You have reached your limit of 35 AI analyses for this month. You can still log manually.',
             [
               { text: 'Log Manually', onPress: () => handleSave(false) },
               { text: 'Cancel', style: 'cancel' }
@@ -137,10 +192,17 @@ const LogPooScreen = ({ navigation }) => {
     let analysisSkipped = false;
 
     const saveLogToDb = () => {
-      db.runSync(
-        'INSERT INTO poo_logs (id, consistency_score, color, mucus_present, blood_visible, worms_visible, notes, photo_uri) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [logId, consistency, color, mucus, blood, worms, notes, photoUri]
-      );
+      try {
+        db.runSync(
+          'INSERT INTO poo_logs (id, consistency_score, color, mucus_present, blood_visible, worms_visible, notes, photo_uri) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [logId, consistency, color, mucus, blood, worms, notes, photoUri]
+        );
+      } catch (e) {
+        // Ignore unique constraint errors if already saved
+        if (!e.message?.includes('UNIQUE constraint failed')) {
+          throw e;
+        }
+      }
     };
 
     if (withAi && photoUri) {
@@ -194,7 +256,7 @@ const LogPooScreen = ({ navigation }) => {
           throw new Error("Invalid AI response. Please ensure the 'analyze-poo' function is deployed.");
         }
 
-        if (analysis.confidence_score < 0.9) {
+        if (analysis.confidence_score < 0.85) {
           analysisSkipped = true;
           // Navigate to RetakePromptScreen which will handle the rest
           navigation.navigate('RetakePrompt', {
@@ -216,7 +278,7 @@ const LogPooScreen = ({ navigation }) => {
         try {
           console.log("Saving AI Analysis:", JSON.stringify(analysis, null, 2));
           db.runSync(
-            'INSERT INTO ai_analysis (id, poo_log_id, classification, health_score, gut_health_summary, shape_analysis, texture_analysis, color_analysis, moisture_analysis, parasite_check_results, flags_and_observations, actionable_recommendations, vet_flag, confidence_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO ai_analysis (id, poo_log_id, classification, health_score, gut_health_summary, shape_analysis, texture_analysis, color_analysis, moisture_analysis, parasite_check_results, flags_and_observations, actionable_recommendations, vet_flag, confidence_score, hydration_estimate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
               uuidv4(), 
               logId, 
@@ -231,7 +293,8 @@ const LogPooScreen = ({ navigation }) => {
               JSON.stringify(analysis.flags_and_observations || []), 
               JSON.stringify(analysis.actionable_recommendations || []), 
               analysis.vet_flag ? 1 : 0, 
-              analysis.confidence_score || 0
+              analysis.confidence_score || 0,
+              JSON.stringify(analysis.hydration_estimate || {})
             ]
           );
         } catch (error) {
@@ -247,22 +310,22 @@ const LogPooScreen = ({ navigation }) => {
 
       } catch (error) {
         console.error('AI Analysis Process Error:', error);
+        setIsLoading(false);
         Alert.alert(
             'AI Analysis Failed', 
-            `${error.message} Your log will be saved without the AI analysis. Please check your network connection.`
+            `The AI could not analyze your log: ${error.message}\n\nPlease try again or save as a manual log.`
         );
+        return; // Stop execution. Do not fall through to manual save.
       }
     }
 
-    // Save the poo log itself (Manual or Fallback)
+    // Save the poo log itself (Manual Only)
     try {
       saveLogToDb();
       setIsLoading(false);
-      if (!analysisSkipped) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Log Saved!', 'Your poo log has been successfully saved.');
-        navigation.goBack();
-      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Log Saved', 'Your manual log has been successfully saved.');
+      navigation.goBack();
     } catch (error) {
       setIsLoading(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -279,21 +342,107 @@ const LogPooScreen = ({ navigation }) => {
         visible={isLoading}
       >
         <View className="flex-1 justify-center items-center bg-black/60">
-          <View className="bg-surface p-8 rounded-3xl items-center shadow-2xl w-3/4">
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text className="mt-4 text-lg font-medium text-center text-text_primary">{loadingMessage}</Text>
+          <View className="bg-surface p-8 rounded-3xl items-center shadow-2xl w-4/5">
+            <ActivityIndicator size="large" color={Colors.primary} className="mb-6" />
+            <Text className="text-xl font-bold text-center text-text_primary mb-2">
+              {loadingMessage === 'Saving Log...' || loadingMessage === 'Uploading photo...' ? 'Processing...' : 'AI Analysis in Progress'}
+            </Text>
+            <Text className="text-base text-center text-text_secondary italic min-h-[24px]">
+              {loadingMessage}
+            </Text>
           </View>
         </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showPhotoTips}
+        onRequestClose={() => setShowPhotoTips(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowPhotoTips(false)}>
+            <View className="flex-1 justify-end bg-black/60">
+                <TouchableWithoutFeedback onPress={() => {}}>
+                    <View className="bg-background rounded-t-[40px] h-[70%] p-6">
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Text className="text-2xl font-bold text-text_primary">Photo Tips</Text>
+                            <TouchableOpacity onPress={() => setShowPhotoTips(false)} className="bg-surface p-2 rounded-full border border-border">
+                                <Ionicons name="close" size={24} color={Colors.text_primary} />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <View className="py-2">
+                                <View className="flex-row items-start mb-8">
+                                    <View className="bg-primary/10 p-3 rounded-2xl h-14 w-14 items-center justify-center mr-5">
+                                        <Ionicons name="sunny" size={28} color={Colors.primary} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-xl font-bold text-text_primary mb-1">Good Lighting</Text>
+                                        <Text className="text-text_secondary text-base leading-6">Ensure the poo is well-lit. Natural daylight is best. Avoid shadows covering the subject.</Text>
+                                    </View>
+                                </View>
+
+                                <View className="flex-row items-start mb-8">
+                                    <View className="bg-primary/10 p-3 rounded-2xl h-14 w-14 items-center justify-center mr-5">
+                                        <Ionicons name="aperture" size={28} color={Colors.primary} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-xl font-bold text-text_primary mb-1">Clear Focus</Text>
+                                        <Text className="text-text_secondary text-base leading-6">Tap to focus on the poo. Blurry images make it hard for AI to see texture.</Text>
+                                    </View>
+                                </View>
+
+                                <View className="flex-row items-start mb-8">
+                                    <View className="bg-primary/10 p-3 rounded-2xl h-14 w-14 items-center justify-center mr-5">
+                                        <Ionicons name="scan" size={28} color={Colors.primary} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-xl font-bold text-text_primary mb-1">Get Close</Text>
+                                        <Text className="text-text_secondary text-base leading-6">Fill the frame with the poo, but keep enough background for context.</Text>
+                                    </View>
+                                </View>
+                                
+                                <View className="flex-row items-start mb-8">
+                                    <View className="bg-primary/10 p-3 rounded-2xl h-14 w-14 items-center justify-center mr-5">
+                                        <Ionicons name="trash" size={28} color={Colors.primary} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-xl font-bold text-text_primary mb-1">Clean Background</Text>
+                                        <Text className="text-text_secondary text-base leading-6">Try to avoid other objects in the frame like shoes or leads.</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity 
+                                className="bg-primary p-4 rounded-2xl mt-10 mb-8 shadow-lg shadow-primary/20"
+                                onPress={() => setShowPhotoTips(false)}
+                            >
+                                <Text className="text-text_on_primary text-center font-bold text-lg">Got it!</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </View>
+                </TouchableWithoutFeedback>
+            </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <ScrollView className="p-4" showsVerticalScrollIndicator={false}>
         {!photoUri ? (
           <View className="mb-8 mt-4">
             <Text className="text-3xl font-bold text-center text-text_primary mb-2">Let's check that poo!</Text>
-            <Text className="text-center text-text_secondary mb-8 text-base">AI Analysis is the best way to track health.</Text>
+            <Text className="text-center text-text_secondary mb-6 text-base">AI Analysis is the best way to track health.</Text>
+            
+            {monthlyCredits && (
+              <View className="bg-surface_highlight self-center px-4 py-2 rounded-full mb-8 border border-border">
+                <Text className="text-text_secondary font-medium text-sm">
+                  {Math.max(0, monthlyCredits.limit - monthlyCredits.used)} AI Credits Remaining
+                </Text>
+              </View>
+            )}
             
             <TouchableOpacity
-              className="bg-primary p-8 rounded-3xl mb-4 shadow-lg shadow-primary/30 items-center"
+              className="bg-primary p-8 rounded-3xl mb-6 shadow-lg shadow-primary/30 items-center"
               onPress={takePhoto}
               disabled={isLoading}
             >
@@ -304,12 +453,20 @@ const LogPooScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-surface border border-border p-6 rounded-3xl mb-8 items-center"
+              className="bg-surface border border-border p-6 rounded-3xl mb-6 items-center"
               onPress={pickImage}
               disabled={isLoading}
             >
               <Ionicons name="images-outline" size={32} color={Colors.primary} />
               <Text className="text-primary text-center text-lg font-bold mt-2">Select from Gallery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+                onPress={() => setShowPhotoTips(true)}
+                className="flex-row items-center justify-center mb-8 py-2"
+            >
+                <Ionicons name="information-circle-outline" size={20} color={Colors.text_secondary} />
+                <Text className="text-text_secondary font-medium ml-2">Photo tips for best AI results</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -341,6 +498,12 @@ const LogPooScreen = ({ navigation }) => {
               <Ionicons name="sparkles" size={24} color="white" style={{ marginRight: 8 }} />
               <Text className="text-text_on_primary text-center text-xl font-bold">Analyze with AI</Text>
             </TouchableOpacity>
+
+            {monthlyCredits && (
+              <Text className="text-center text-text_muted text-sm mb-4">
+                {Math.max(0, monthlyCredits.limit - monthlyCredits.used)} monthly credits remaining
+              </Text>
+            )}
 
             <TouchableOpacity
               className="bg-surface border border-border p-4 rounded-2xl items-center mb-4"

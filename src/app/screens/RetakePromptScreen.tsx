@@ -27,8 +27,24 @@ const RetakePromptScreen = ({ navigation, route }) => {
 
       // 2. Save the low-confidence AI analysis
       db.runSync(
-        'INSERT INTO ai_analysis (id, poo_log_id, classification, health_score, gut_health_summary, shape_analysis, texture_analysis, color_analysis, moisture_analysis, parasite_check_results, flags_and_observations, actionable_recommendations, vet_flag, confidence_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [uuidv4(), logId, analysisData.classification, analysisData.health_score, analysisData.gut_health_summary, JSON.stringify(analysisData.detailed_breakdown.shape), JSON.stringify(analysisData.detailed_breakdown.texture), JSON.stringify(analysisData.detailed_breakdown.colour), JSON.stringify(analysisData.detailed_breakdown.moisture_and_hydration), JSON.stringify(analysisData.detailed_breakdown.parasite_check), JSON.stringify(analysisData.flags_and_observations), JSON.stringify(analysisData.actionable_recommendations), analysisData.vet_flag, analysisData.confidence_score]
+        'INSERT INTO ai_analysis (id, poo_log_id, classification, health_score, gut_health_summary, shape_analysis, texture_analysis, color_analysis, moisture_analysis, parasite_check_results, flags_and_observations, actionable_recommendations, vet_flag, confidence_score, hydration_estimate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          uuidv4(), 
+          logId, 
+          analysisData.classification || 'Unknown', 
+          analysisData.health_score || 0, 
+          analysisData.gut_health_summary || 'No summary available', 
+          JSON.stringify(analysisData.detailed_breakdown?.shape || {}), 
+          JSON.stringify(analysisData.detailed_breakdown?.texture || {}), 
+          JSON.stringify(analysisData.detailed_breakdown?.colour || {}), 
+          JSON.stringify(analysisData.detailed_breakdown?.moisture_and_hydration || {}), 
+          JSON.stringify(analysisData.detailed_breakdown?.parasite_check || {}), 
+          JSON.stringify(analysisData.flags_and_observations || []), 
+          JSON.stringify(analysisData.actionable_recommendations || []), 
+          analysisData.vet_flag ? 1 : 0, 
+          analysisData.confidence_score || 0,
+          JSON.stringify(analysisData.hydration_estimate || {})
+        ]
       );
 
       // On success, navigate back to the home screen
@@ -49,7 +65,7 @@ const RetakePromptScreen = ({ navigation, route }) => {
         
         <Text className="text-2xl font-bold text-center mb-2 text-text_primary">Let's try that again</Text>
         <Text className="text-base text-text_secondary text-center mb-6">
-          We couldn't get a clear enough view. (Confidence: {Math.round(analysisData.confidence_score * 100)}%).
+          Our AI isn't quite sure about this one (Confidence: {Math.round(analysisData.confidence_score * 100)}%). We aim for 85%+ accuracy to ensure reliable results. You can still save this log below, but the analysis might be less precise.
         </Text>
 
         <View className="self-start w-full mb-8 bg-background p-5 rounded-2xl border border-border">

@@ -65,12 +65,12 @@ const AppNavigator = () => {
             <Stack.Screen 
               name="LogPoo" 
               component={LogPooScreen} 
-              options={{ title: 'Log a Poo' }}
+              options={{ title: 'Log a Poo', headerBackTitle: 'Home' }}
             />
             <Stack.Screen 
               name="PooDetail" 
               component={PooDetailScreen} 
-              options={{ title: 'Poo Details' }} // Header shown for back button
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="Settings" 
