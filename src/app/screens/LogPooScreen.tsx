@@ -517,6 +517,28 @@ const LogPooScreen = ({ navigation }) => {
 
         {(showManualEntry || (photoUri && showManualEntry)) && (
           <View className="animate-fade-in pb-10">
+            {!photoUri && (
+              <View className="mb-6">
+                <Text className="text-lg font-bold mb-3 text-text_primary ml-1">Add Photo (Optional)</Text>
+                <View className="flex-row">
+                  <TouchableOpacity 
+                    onPress={takePhoto}
+                    className="flex-1 bg-surface border border-border p-4 rounded-2xl items-center flex-row justify-center mr-2"
+                  >
+                    <Ionicons name="camera-outline" size={24} color={Colors.text_primary} style={{marginRight: 8}}/>
+                    <Text className="text-text_primary font-semibold">Camera</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={pickImage}
+                    className="flex-1 bg-surface border border-border p-4 rounded-2xl items-center flex-row justify-center ml-2"
+                  >
+                    <Ionicons name="images-outline" size={24} color={Colors.text_primary} style={{marginRight: 8}}/>
+                    <Text className="text-text_primary font-semibold">Gallery</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <View className="mb-6 p-5 bg-surface rounded-3xl border border-border shadow-sm">
               <Text className="text-lg font-bold mb-4 text-text_primary">Consistency</Text>
               <Slider
